@@ -1,0 +1,18 @@
+# ==========================================================================
+# PLACEHOLDER — infrastructure is not defined yet.
+#
+# This file is intentionally empty of service definitions. It will be
+# populated during the "Docker / Caddy / CI" step of the build (see the
+# Planned build order in CLAUDE.md).
+#
+# Planned services:
+#   web          Next.js frontend
+#   api          FastAPI gateway + SSE
+#   orchestrator LangGraph worker (packages/orchestrator)
+#   redis        run state, event pub/sub, rate limiting, cache
+#   postgres     saved runs, logs, artifacts, shareable links
+#   langfuse     self-hosted observability
+#   caddy        reverse proxy + automatic TLS (agents.devs-core.com)
+#
+# Do not add real service config here until that build step.
+# ==========================================================================

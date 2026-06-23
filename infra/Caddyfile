@@ -1,0 +1,16 @@
+# ==========================================================================
+# PLACEHOLDER — reverse proxy / TLS config is not defined yet.
+#
+# This file will configure Caddy to terminate SSL and route traffic for
+# agents.devs-core.com to the web (Next.js) and api (FastAPI) services.
+# It will be populated during the "Docker / Caddy / CI" step of the build
+# (see the Planned build order in CLAUDE.md).
+#
+# Planned (illustrative only — NOT active config):
+#   agents.devs-core.com {
+#       handle /api/*  -> reverse_proxy api:8000
+#       handle         -> reverse_proxy web:3000
+#   }
+#
+# Do not add real routing config here until that build step.
+# ==========================================================================
