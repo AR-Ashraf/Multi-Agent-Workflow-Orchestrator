@@ -1,0 +1,19 @@
+{
+  "name": "cadenza",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Cadenza — AI agents, working in concert. A Devs Core showcase of production-grade agentic systems.",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22 <23"
+  },
+  "scripts": {
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "pnpm -r --if-present lint",
+    "build": "pnpm -r --if-present build"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
