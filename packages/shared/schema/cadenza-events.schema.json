@@ -1,0 +1,949 @@
+{
+  "$ref": "#/definitions/CadenzaEvent",
+  "definitions": {
+    "CadenzaEvent": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "run.started"
+            },
+            "query": {
+              "type": "string"
+            },
+            "provider": {
+              "type": "string",
+              "enum": [
+                "anthropic",
+                "openai",
+                "google",
+                "groq",
+                "mistral"
+              ]
+            },
+            "modelId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "modelLabel": {
+              "type": "string",
+              "minLength": 1
+            },
+            "routingEnabled": {
+              "type": "boolean"
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "live",
+                "demo"
+              ]
+            },
+            "totalSteps": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "runId",
+            "seq",
+            "ts",
+            "type",
+            "query",
+            "provider",
+            "modelId",
+            "modelLabel",
+            "routingEnabled",
+            "mode",
+            "totalSteps"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "run.state"
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "idle",
+                "running",
+                "paused",
+                "done",
+                "error"
+              ]
+            },
+            "label": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "seq",
+            "ts",
+            "type",
+            "state",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "step.changed"
+            },
+            "step": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "totalSteps": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "runId",
+            "seq",
+            "ts",
+            "type",
+            "step",
+            "totalSteps"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "node.status"
+            },
+            "nodeId": {
+              "type": "string",
+              "enum": [
+                "planner",
+                "researcher-a",
+                "researcher-b",
+                "researcher-c",
+                "analyst",
+                "hitl",
+                "writer",
+                "critic",
+                "output"
+              ]
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "idle",
+                "active",
+                "done",
+                "blocked",
+                "hitl"
+              ]
+            }
+          },
+          "required": [
+            "runId",
+            "seq",
+            "ts",
+            "type",
+            "nodeId",
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "edge.status"
+            },
+            "edgeId": {
+              "type": "string",
+              "enum": [
+                "planner->researcher-a",
+                "planner->researcher-b",
+                "planner->researcher-c",
+                "researcher-a->analyst",
+                "researcher-b->analyst",
+                "researcher-c->analyst",
+                "analyst->hitl",
+                "hitl->writer",
+                "writer->critic",
+                "critic->writer",
+                "critic->output"
+              ]
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "idle",
+                "flow",
+                "done",
+                "retry",
+                "retry-flow"
+              ]
+            }
+          },
+          "required": [
+            "runId",
+            "seq",
+            "ts",
+            "type",
+            "edgeId",
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "meters"
+            },
+            "tokens": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "costUsd": {
+              "type": "number",
+              "minimum": 0
+            },
+            "elapsedMs": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "runId",
+            "seq",
+            "ts",
+            "type",
+            "tokens",
+            "costUsd"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "model.routing"
+            },
+            "routingEnabled": {
+              "type": "boolean"
+            },
+            "assignments": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "nodeId": {
+                    "type": "string",
+                    "enum": [
+                      "planner",
+                      "researcher-a",
+                      "researcher-b",
+                      "researcher-c",
+                      "analyst",
+                      "hitl",
+                      "writer",
+                      "critic",
+                      "output"
+                    ]
+                  },
+                  "modelLabel": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "tier": {
+                    "type": "string",
+                    "enum": [
+                      "smart",
+                      "fast"
+                    ]
+                  }
+                },
+                "required": [
+                  "nodeId",
+                  "modelLabel",
+                  "tier"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "runId",
+            "seq",
+            "ts",
+            "type",
+            "routingEnabled",
+            "assignments"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "log"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "info",
+                "rationale",
+                "security",
+                "verify",
+                "human"
+              ]
+            },
+            "who": {
+              "type": "string",
+              "minLength": 1
+            },
+            "text": {
+              "type": "string"
+            },
+            "nodeId": {
+              "type": "string",
+              "enum": [
+                "planner",
+                "researcher-a",
+                "researcher-b",
+                "researcher-c",
+                "analyst",
+                "hitl",
+                "writer",
+                "critic",
+                "output"
+              ]
+            }
+          },
+          "required": [
+            "runId",
+            "seq",
+            "ts",
+            "type",
+            "kind",
+            "who",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "agent.rationale"
+            },
+            "agentId": {
+              "type": "string",
+              "enum": [
+                "planner",
+                "researcher-a",
+                "researcher-b",
+                "researcher-c",
+                "analyst",
+                "hitl",
+                "writer",
+                "critic",
+                "output"
+              ]
+            },
+            "summary": {
+              "type": "string",
+              "minLength": 1
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "verdict": {
+              "type": "string",
+              "enum": [
+                "accept",
+                "retry"
+              ]
+            }
+          },
+          "required": [
+            "runId",
+            "seq",
+            "ts",
+            "type",
+            "agentId",
+            "summary"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "injection.screened"
+            },
+            "nodeId": {
+              "type": "string",
+              "enum": [
+                "planner",
+                "researcher-a",
+                "researcher-b",
+                "researcher-c",
+                "analyst",
+                "hitl",
+                "writer",
+                "critic",
+                "output"
+              ]
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "passed",
+                "sanitized",
+                "blocked"
+              ]
+            },
+            "sourceUrl": {
+              "type": "string"
+            },
+            "detail": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "seq",
+            "ts",
+            "type",
+            "nodeId",
+            "status",
+            "detail"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "claim.verified"
+            },
+            "claimId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "claimText": {
+              "type": "string"
+            },
+            "sourceId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "verdict": {
+              "type": "string",
+              "enum": [
+                "grounded",
+                "unsupported"
+              ]
+            },
+            "detail": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "seq",
+            "ts",
+            "type",
+            "claimId",
+            "claimText",
+            "sourceId",
+            "verdict"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "hitl.requested"
+            },
+            "prompt": {
+              "type": "string"
+            },
+            "proposedDirection": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "options": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "approve",
+                  "adjust"
+                ]
+              },
+              "default": [
+                "approve",
+                "adjust"
+              ]
+            }
+          },
+          "required": [
+            "runId",
+            "seq",
+            "ts",
+            "type",
+            "prompt",
+            "proposedDirection"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "hitl.resolved"
+            },
+            "decision": {
+              "type": "string",
+              "enum": [
+                "approve",
+                "adjust"
+              ]
+            },
+            "note": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "runId",
+            "seq",
+            "ts",
+            "type",
+            "decision"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "brief.released"
+            },
+            "brief": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "byline": {
+                  "type": "string"
+                },
+                "query": {
+                  "type": "string"
+                },
+                "model": {
+                  "type": "string"
+                },
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "live",
+                    "demo"
+                  ]
+                },
+                "sections": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "heading": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "body": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "heading",
+                      "body"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "sources": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "label": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "url": {
+                        "type": "string",
+                        "format": "uri"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "label"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "claimsVerified": {
+                  "type": "object",
+                  "properties": {
+                    "verified": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "verified",
+                    "total"
+                  ],
+                  "additionalProperties": false
+                },
+                "permalink": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "title",
+                "byline",
+                "query",
+                "model",
+                "mode",
+                "sections",
+                "sources",
+                "claimsVerified",
+                "permalink"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "runId",
+            "seq",
+            "ts",
+            "type",
+            "brief"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "run.completed"
+            },
+            "tokens": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "costUsd": {
+              "type": "number",
+              "minimum": 0
+            },
+            "elapsedMs": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "claimsVerified": {
+              "type": "object",
+              "properties": {
+                "verified": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "total": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "verified",
+                "total"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "runId",
+            "seq",
+            "ts",
+            "type",
+            "tokens",
+            "costUsd",
+            "elapsedMs",
+            "claimsVerified"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "error"
+            },
+            "code": {
+              "type": "string",
+              "minLength": 1
+            },
+            "message": {
+              "type": "string"
+            },
+            "recoverable": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "required": [
+            "runId",
+            "seq",
+            "ts",
+            "type",
+            "code",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
