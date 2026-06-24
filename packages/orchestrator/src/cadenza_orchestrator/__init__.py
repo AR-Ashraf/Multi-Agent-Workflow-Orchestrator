@@ -6,7 +6,7 @@ caller; the UI is a thin SSE client.
 
 from .context import BudgetExceeded, RunContext
 from .events import Emitter, Event
-from .graphs import build_graph, run_research_brief
+from .graphs import RunSession, build_graph, run_research_brief
 from .llm import LLMClient, LLMResult, MockLLMClient
 
 __all__ = [
@@ -17,6 +17,7 @@ __all__ = [
     "LLMResult",
     "MockLLMClient",
     "RunContext",
+    "RunSession",
     "build_graph",
     "run_research_brief",
 ]

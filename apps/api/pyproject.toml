@@ -1,0 +1,57 @@
+[project]
+name = "cadenza-api"
+version = "0.0.0"
+description = "Cadenza FastAPI gateway — REST + SSE over Redis pub/sub. Thin caller of the orchestrator."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "redis>=5.0",
+  "sse-starlette>=2.1",
+  "pydantic>=2.7",
+  "pydantic-settings>=2.4",
+  "cadenza-orchestrator",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "httpx>=0.27",
+  "fakeredis>=2.26",
+  "ruff>=0.7",
+  "black>=24.10",
+  "pyright>=1.1.390",
+]
+
+[tool.uv.sources]
+cadenza-orchestrator = { path = "../../packages/orchestrator", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cadenza_api"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.pyright]
+include = ["src", "tests"]
+typeCheckingMode = "standard"
+pythonVersion = "3.12"
