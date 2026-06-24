@@ -1,9 +1,11 @@
 """Critic — verifies every key claim against its cited source (feature 4).
 
-On the first pass claim 3 is unsupported, so the Critic rejects and loops back to
-the Writer (the retry edge). On the second pass the revised claim is grounded and
-the Critic accepts. Real claim verification against fetched sources replaces this
-mock logic in Unit 5; the emitted `claim.verified` shape is already final.
+Real verification: each claim's value must appear in the text of its cited source
+(`corpus.verify_claim`). Unsupported claims are rejected and the draft loops back
+to the Writer; on the retry pass only the previously-failed claims are re-checked,
+and the corrected draft is released. The mock LLM is used only for token
+accounting — the grounding decision is the deterministic verifier (the seam where
+an LLM grounding judge plugs in later).
 """
 
 from __future__ import annotations
@@ -13,8 +15,35 @@ from typing import Any
 from langchain_core.runnables import RunnableConfig
 
 from ..constants import MAX_CRITIC_RETRIES
+from ..context import RunContext
+from ..corpus import verify_claim
 from ..state import ResearchState
 from ._base import ctx_from
+
+
+def _verify_and_emit(ctx: RunContext, claim: dict[str, str], *, recheck: bool) -> bool:
+    e = ctx.emitter
+    verdict = verify_claim(claim)
+    status = "grounded" if verdict.grounded else "unsupported"
+    e.claim_verified(
+        claim["id"],
+        claim["text"],
+        claim["source_id"],
+        status,
+        detail=("re-checked after revision; " if recheck else "") + verdict.reason,
+    )
+    mark = "✓" if verdict.grounded else "✗"
+    prefix = "re-checked " if recheck else ""
+    e.log(
+        "verify" if verdict.grounded else "security",
+        "Critic",
+        f'{prefix}claim "{claim["text"]}" → {status} in {claim["source_id"]}. {mark}',
+        "critic",
+    )
+    ctx.charge(
+        ctx.llm.complete(system="Critic", prompt=f"verify {claim['id']}", model=ctx.model_id)
+    )
+    return verdict.grounded
 
 
 def critic(state: ResearchState, config: RunnableConfig) -> dict[str, Any]:
@@ -22,72 +51,57 @@ def critic(state: ResearchState, config: RunnableConfig) -> dict[str, Any]:
     ctx.step()
     e = ctx.emitter
     attempts = state.get("critic_attempts", 0)
+    claims: list[dict[str, str]] = state.get("draft", {}).get("claims", [])
 
     e.edge_status("writer->critic", "done")
     e.node_status("critic", "active")
 
     if attempts == 0:
         e.step_changed(6, 8)
-        # first pass — verify every key claim against its source
-        e.claim_verified("c1", "183k US dentists", "Source 1", "grounded")
-        e.log(
-            "verify", "Critic", 'claim 1 — "183k US dentists" → grounded in Source 1. ✓', "critic"
-        )
-        ctx.charge(ctx.llm.complete(system="Critic", prompt="verify claim 1", model=ctx.model_id))
-        e.claim_verified("c2", "competitor pricing $300–$800/mo", "Source 3", "grounded")
-        e.log(
-            "verify",
-            "Critic",
-            'claim 2 — "competitor pricing $300–$800/mo" → grounded in Source 3. ✓',
-            "critic",
-        )
-        ctx.charge(ctx.llm.complete(system="Critic", prompt="verify claim 2", model=ctx.model_id))
+        failed = [c["id"] for c in claims if not _verify_and_emit(ctx, c, recheck=False)]
+        if failed:
+            e.step_changed(7, 8)
+            e.node_status("critic", "blocked")
+            e.edge_status("critic->writer", "retry-flow")
+            e.agent_rationale(
+                "critic",
+                f"{len(failed)} claim(s) not grounded in the cited source — send back to the Writer, then re-verify.",
+                verdict="retry",
+            )
+            e.log(
+                "rationale",
+                "Critic",
+                "verdict: retry — fix the unsupported claim(s) to match the cited source, then re-verify.",
+                "critic",
+            )
+            return {"critic_attempts": attempts + 1, "verdict": "retry", "failed_claims": failed}
 
-        # claim 3 unsupported → reject and retry
-        e.claim_verified(
-            "c3",
-            "no-show cost figure",
-            "Source 2",
-            "unsupported",
-            detail="Draft cited a number not supported by the source.",
-        )
-        e.log(
-            "security",
-            "Critic",
-            'claim 3 — "no-show cost" → not supported by the source. ✗ Rejecting draft.',
-            "critic",
-        )
-        e.step_changed(7, 8)
+        e.node_status("critic", "done")
+        e.edge_status("critic->output", "flow")
+        return {"critic_attempts": attempts + 1, "verdict": "accept"}
+
+    # retry pass — re-verify only the previously-failed claims
+    failed_ids = set(state.get("failed_claims", []))
+    by_id = {c["id"]: c for c in claims}
+    still_failed = [
+        cid
+        for cid in failed_ids
+        if cid in by_id and not _verify_and_emit(ctx, by_id[cid], recheck=True)
+    ]
+
+    if still_failed and attempts <= MAX_CRITIC_RETRIES:
         e.node_status("critic", "blocked")
         e.edge_status("critic->writer", "retry-flow")
-        e.agent_rationale(
-            "critic",
-            "Fix claim 3 to match Source 2's actual figure, then re-verify.",
-            verdict="retry",
-        )
+        e.agent_rationale("critic", "claim still unsupported — retry.", verdict="retry")
         e.log(
             "rationale",
             "Critic",
-            "verdict: retry — fix claim 3 to match Source 2's actual figure, then re-verify.",
+            "verdict: retry — claim still unsupported after revision.",
             "critic",
         )
-        return {"critic_attempts": attempts + 1, "verdict": "retry"}
+        return {"critic_attempts": attempts + 1, "verdict": "retry", "failed_claims": still_failed}
 
-    # retry pass — only the previously-failed claim is re-checked → grounded → accept
-    e.claim_verified(
-        "c3",
-        "no-show cost $50k–$70k/yr",
-        "Source 2",
-        "grounded",
-        detail="Re-checked after revision.",
-    )
-    e.log(
-        "verify",
-        "Critic",
-        "claim 3 — re-checked → now grounded in Source 2. ✓ All 3 claims verified.",
-        "critic",
-    )
-    ctx.charge(ctx.llm.complete(system="Critic", prompt="re-verify claim 3", model=ctx.model_id))
+    e.log("verify", "Critic", "all key claims grounded in their cited sources. ✓", "critic")
     e.node_status("critic", "done")
     e.edge_status("critic->output", "flow")
     return {"critic_attempts": attempts + 1, "verdict": "accept"}

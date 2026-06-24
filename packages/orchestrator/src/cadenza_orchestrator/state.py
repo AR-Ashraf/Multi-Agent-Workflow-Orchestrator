@@ -36,6 +36,7 @@ class ResearchState(TypedDict, total=False):
     critic_attempts: int
     claims: list[dict[str, Any]]
     verdict: str  # "accept" | "retry"
+    failed_claims: list[str]  # claim ids the Critic flagged as unsupported
 
     # terminal
     brief: dict[str, Any]
