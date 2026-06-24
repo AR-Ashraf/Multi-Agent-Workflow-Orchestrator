@@ -60,6 +60,7 @@ name = "cadenza-orchestrator"
 version = "0.0.0"
 source = { editable = "." }
 dependencies = [
+    { name = "httpx" },
     { name = "langgraph" },
     { name = "pydantic" },
 ]
@@ -75,6 +76,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "httpx", specifier = ">=0.27" },
     { name = "langgraph", specifier = ">=1.0,<2.0" },
     { name = "pydantic", specifier = ">=2.7" },
 ]

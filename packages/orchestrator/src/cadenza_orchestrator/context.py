@@ -18,6 +18,7 @@ from .constants import (
 )
 from .events import Emitter
 from .llm import LLMClient, LLMResult
+from .tools import FixtureFetcher, FixtureSearchClient, SearchClient, WebFetcher
 
 
 class BudgetExceeded(Exception):
@@ -42,6 +43,10 @@ class RunContext:
     max_tokens: int = MAX_TOKENS
     max_steps: int = MAX_STEPS
     steps_used: int = field(default=0)
+    # Tool clients default to offline fixtures; the API layer (Unit 6) injects
+    # real Tavily/Brave + Firecrawl clients (our server-side keys, not the visitor's).
+    search: SearchClient = field(default_factory=FixtureSearchClient)
+    fetch: WebFetcher = field(default_factory=FixtureFetcher)
 
     def model_label(self, node_id: str) -> str:
         return model_badge_for(node_id, self.provider, self.model_id, self.routing)

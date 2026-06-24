@@ -24,7 +24,7 @@ from ..agents.critic import critic, route_after_critic
 from ..agents.planner import planner
 from ..agents.researchers import make_researcher
 from ..agents.writer import writer
-from ..constants import TOTAL_STEPS, assign_models, resolve_model
+from ..constants import MAX_STEPS, MAX_TOKENS, TOTAL_STEPS, assign_models, resolve_model
 from ..context import BudgetExceeded, RunContext
 from ..events import Emitter
 from ..llm import LLMClient, MockLLMClient
@@ -169,11 +169,6 @@ def run_research_brief(
     """
     llm = llm or MockLLMClient()
     emitter = Emitter(run_id, sink)
-    caps: dict[str, int] = {}
-    if max_tokens is not None:
-        caps["max_tokens"] = max_tokens
-    if max_steps is not None:
-        caps["max_steps"] = max_steps
     ctx = RunContext(
         emitter=emitter,
         llm=llm,
@@ -182,7 +177,8 @@ def run_research_brief(
         model_id=model_id,
         routing=routing,
         mode=mode,
-        **caps,
+        max_tokens=max_tokens if max_tokens is not None else MAX_TOKENS,
+        max_steps=max_steps if max_steps is not None else MAX_STEPS,
     )
 
     graph = build_graph()
