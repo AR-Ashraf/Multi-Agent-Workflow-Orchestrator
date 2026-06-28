@@ -13,9 +13,9 @@
  * is safe to assert against in tests.
  */
 
-import type { CadenzaEvent, Brief, RunMode } from "../events.js";
-import { assignModels, resolveModel, type ProviderId } from "../models.js";
-import { TOTAL_STEPS } from "../topology.js";
+import type { CadenzaEvent, Brief, RunMode } from "../events";
+import { assignModels, resolveModel, type ProviderId } from "../models";
+import { TOTAL_STEPS } from "../topology";
 
 /** Distributive Omit so each event-union member keeps its own discriminated fields. */
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;

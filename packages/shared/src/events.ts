@@ -15,8 +15,8 @@
  */
 
 import { z } from "zod";
-import { EDGE_IDS, NODE_IDS } from "./topology.js";
-import { PROVIDER_IDS } from "./models.js";
+import { EDGE_IDS, NODE_IDS } from "./topology";
+import { PROVIDER_IDS } from "./models";
 
 /* ----------------------------- shared enums ------------------------------ */
 

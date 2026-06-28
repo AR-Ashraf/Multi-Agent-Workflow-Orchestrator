@@ -8,7 +8,7 @@
  * anything but the user's own transient input.
  */
 
-import type { NodeId } from "./topology.js";
+import type { NodeId } from "./topology";
 
 export const PROVIDER_IDS = ["anthropic", "openai", "google", "groq", "mistral"] as const;
 export type ProviderId = (typeof PROVIDER_IDS)[number];

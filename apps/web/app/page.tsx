@@ -1,4 +1,5 @@
 import { CadenzaMark } from "@/components/CadenzaMark";
+import { Console } from "@/components/console/Console";
 import { MiniFlow } from "@/components/MiniFlow";
 import { Nav } from "@/components/Nav";
 
@@ -71,18 +72,18 @@ export default function Home() {
               explainer tells you what’s happening and why it’s hard.
             </p>
           </div>
-          <div className="console-shell">
-            <div className="console-bar">
-              <div className="title">
-                <CadenzaMark className="mark" />
-                Cadenza Console <span className="wf">— AI Market Research Brief</span>
-              </div>
-            </div>
-            <div className="console-placeholder">
-              The live console — bring your own model &amp; key, the React Flow agent graph, the
-              event log, and the cited brief — streams in here.
-            </div>
-          </div>
+          <Console />
+          <p
+            style={{
+              fontSize: 12.5,
+              color: "var(--muted)",
+              marginTop: 14,
+              textAlign: "center",
+              fontFamily: "var(--mono)",
+            }}
+          >
+            No API key? It runs a free cached demo. Add your key to run it live on your own tokens.
+          </p>
         </div>
       </section>
 
