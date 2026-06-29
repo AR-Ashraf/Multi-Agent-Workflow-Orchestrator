@@ -97,3 +97,17 @@ class RunSession:
         self.errored = True
         self.emitter.error("budget_exceeded", str(ex), recoverable=False)
         self.emitter.run_state("error", "Stopped · budget exceeded")
+
+    def cancel(self, reason: str, *, code: str = "cancelled", label: str | None = None) -> None:
+        """End a paused/abandoned run cleanly without resuming the graph.
+
+        Used by the gateway when a run sits at the HITL checkpoint past the
+        approval timeout — it emits a terminal error event so SSE subscribers
+        stop and the run's resources can be reclaimed.
+        """
+        if self.completed or self.errored:
+            return
+        self.errored = True
+        self.emitter.log("human", "Workflow", f"run ended — {reason}.", "hitl")
+        self.emitter.error(code, reason, recoverable=False)
+        self.emitter.run_state("error", label or "Stopped")

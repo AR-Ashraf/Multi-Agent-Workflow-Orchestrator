@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     run_ttl_seconds: int = 1800
     cors_origins: list[str] = ["http://localhost:3000", "https://agents.devs-core.com"]
 
+    # How long a run may sit at the HITL checkpoint before it's cancelled to free
+    # resources (a paused run holds a task + persisted state). 0 disables it.
+    hitl_timeout_seconds: int = 600
+
     # --- cost & safety guardrails (CLAUDE.md §8) --------------------------
     # Per-IP rate limit (§8.2): at most N backend runs per window per IP; over
     # the limit the visitor is served the free cached replay. 0 disables it.

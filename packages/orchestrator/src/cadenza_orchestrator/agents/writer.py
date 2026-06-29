@@ -38,6 +38,11 @@ def writer(state: ResearchState, config: RunnableConfig) -> dict[str, Any]:
         e.step_changed(5, 8)
         e.edge_status("hitl->writer", "done")
         e.node_status("writer", "active")
+        # Honour the human's HITL decision: an "adjust" note steers this draft
+        # (feature: the approval checkpoint actually influences the run).
+        note = (state.get("hitl_note") or "").strip()
+        if state.get("hitl_decision") == "adjust" and note:
+            e.log("info", "Writer", f'incorporating your adjustment: "{note}".', "writer")
         e.log(
             "info", "Writer", "drafting brief with citations from approved sources only.", "writer"
         )

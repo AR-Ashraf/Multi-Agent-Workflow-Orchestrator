@@ -125,7 +125,15 @@ class RunManager:
             paused = await asyncio.to_thread(rec.session.start)
             if paused:
                 rec.status = "paused"
-                await rec.decision_event.wait()
+                if not await self._await_decision(rec):
+                    # Abandoned at the HITL checkpoint — cancel to free resources.
+                    rec.session.cancel(
+                        "no approval received before the timeout",
+                        code="hitl_timeout",
+                        label="Stopped · approval timed out",
+                    )
+                    rec.status = "error"
+                    return
                 decision, note = rec.decision or ("approve", None)
                 await asyncio.to_thread(rec.session.resume, decision, note)
             rec.status = "error" if rec.session.errored else "completed"
@@ -135,6 +143,18 @@ class RunManager:
             rec.status = "error"
         finally:
             await self._settle(rec)
+
+    async def _await_decision(self, rec: RunRecord) -> bool:
+        """Wait for the human decision; return False if the approval window lapses."""
+        timeout = self.settings.hitl_timeout_seconds
+        if not timeout or timeout <= 0:
+            await rec.decision_event.wait()
+            return True
+        try:
+            await asyncio.wait_for(rec.decision_event.wait(), timeout)
+            return True
+        except TimeoutError:
+            return False
 
     async def _settle(self, rec: RunRecord) -> None:
         """Reconcile a house-funded run's reservation to its actual cost (§8.1)."""
