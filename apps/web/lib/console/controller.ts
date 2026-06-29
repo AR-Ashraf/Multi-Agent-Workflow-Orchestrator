@@ -99,11 +99,21 @@ export class MockRunController implements RunController {
   }
 }
 
-/** Drives a real run against the FastAPI gateway over SSE. */
+/**
+ * Drives a real run against the FastAPI gateway over SSE, with a built-in
+ * graceful fallback to the cached client replay (CLAUDE.md §8.1/§8.6): when the
+ * gateway declines a backend run (no key, rate-limited, or daily cap hit) it
+ * responds `mode:"demo"` with no run_id, and when the backend is unreachable the
+ * fetch throws — in both cases the visitor still sees the example, billed to
+ * nobody. approve()/adjust()/stop() route to whichever path is live.
+ */
 export class SseRunController implements RunController {
   private es: EventSource | null = null;
   private runId: string | null = null;
   private readonly base: string;
+  private fallback: MockRunController | null = null;
+  private opts: RunOptions | null = null;
+  private onEvent: (e: CadenzaEvent) => void = () => {};
 
   constructor(base: string) {
     this.base = base.replace(/\/$/, "");
@@ -111,33 +121,48 @@ export class SseRunController implements RunController {
 
   start(opts: RunOptions, onEvent: (e: CadenzaEvent) => void): void {
     this.stop();
+    this.opts = opts;
+    this.onEvent = onEvent;
     void (async () => {
-      const res = await fetch(`${this.base}/api/runs`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          query: opts.query,
-          provider: opts.provider,
-          model: opts.modelId,
-          routing: opts.routing,
-          api_key: opts.apiKey || null,
-        }),
-      });
-      if (!res.ok) throw new Error(`start failed: ${res.status}`);
-      const { run_id: runId } = (await res.json()) as { run_id: string };
-      this.runId = runId;
-      const es = new EventSource(`${this.base}/api/runs/${runId}/events`);
-      es.onmessage = (m) => {
-        try {
-          const event = JSON.parse(m.data) as CadenzaEvent;
-          onEvent(event);
-          if (isTerminal(event)) es.close();
-        } catch {
-          /* ignore malformed frames */
+      try {
+        const res = await fetch(`${this.base}/api/runs`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            query: opts.query,
+            provider: opts.provider,
+            model: opts.modelId,
+            routing: opts.routing,
+            api_key: opts.apiKey || null,
+          }),
+        });
+        if (!res.ok) throw new Error(`start failed: ${res.status}`);
+        const body = (await res.json()) as { run_id: string | null; mode: string };
+        if (body.mode === "demo" || !body.run_id) {
+          this.replayCached(); // guardrail fallback — free cached example
+          return;
         }
-      };
-      this.es = es;
+        this.runId = body.run_id;
+        const es = new EventSource(`${this.base}/api/runs/${body.run_id}/events`);
+        es.onmessage = (m) => {
+          try {
+            const event = JSON.parse(m.data) as CadenzaEvent;
+            onEvent(event);
+            if (isTerminal(event)) es.close();
+          } catch {
+            /* ignore malformed frames */
+          }
+        };
+        this.es = es;
+      } catch {
+        this.replayCached(); // backend unreachable — degrade to the cached run
+      }
     })();
+  }
+
+  private replayCached(): void {
+    this.fallback = new MockRunController();
+    this.fallback.start(this.opts!, this.onEvent);
   }
 
   private decide(decision: string, note?: string): void {
@@ -150,12 +175,16 @@ export class SseRunController implements RunController {
   }
 
   approve(): void {
-    this.decide("approve");
+    if (this.fallback) this.fallback.approve();
+    else this.decide("approve");
   }
   adjust(note?: string): void {
-    this.decide("adjust", note);
+    if (this.fallback) this.fallback.adjust(note);
+    else this.decide("adjust", note);
   }
   stop(): void {
+    this.fallback?.stop();
+    this.fallback = null;
     this.es?.close();
     this.es = null;
   }

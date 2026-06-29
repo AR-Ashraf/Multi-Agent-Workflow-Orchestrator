@@ -78,8 +78,13 @@ async def test_full_run_completes_and_never_leaks_the_key(client: httpx.AsyncCli
 
 async def test_sse_replays_a_completed_run_then_closes(client: httpx.AsyncClient):
     # Drive a run to completion first; the SSE stream then replays every event
-    # and closes at the terminal run.state=done (so it never blocks).
-    run_id = (await client.post("/api/runs", json={"query": DENTAL})).json()["run_id"]
+    # and closes at the terminal run.state=done (so it never blocks). A backend
+    # run requires a (BYOK) key — no-key requests are served the cached replay.
+    start = await client.post(
+        "/api/runs",
+        json={"query": DENTAL, "provider": "anthropic", "api_key": "sk-ant-test-key-123"},
+    )
+    run_id = start.json()["run_id"]
     await _wait_status(client, run_id, "paused")
     await client.post(f"/api/runs/{run_id}/decision", json={"decision": "approve"})
     await _wait_status(client, run_id, "completed")

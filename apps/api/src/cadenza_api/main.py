@@ -17,8 +17,18 @@ from sse_starlette.sse import EventSourceResponse
 
 from .bus import EventBus
 from .config import Settings, get_settings
+from .limits import Limiter
 from .runs import DecisionNotAllowed, RunManager
 from .schemas import DecisionRequest, RunStatusResponse, StartRunRequest, StartRunResponse
+
+
+def _client_ip(request: Request) -> str:
+    """Caller IP for rate limiting — honours the first X-Forwarded-For hop set by
+    the Caddy reverse proxy, falling back to the socket peer."""
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.client.host if request.client else "anon"
 
 
 def create_app(manager: RunManager, *, cors_origins: list[str] | None = None) -> FastAPI:
@@ -35,12 +45,20 @@ def create_app(manager: RunManager, *, cors_origins: list[str] | None = None) ->
         return {"status": "ok"}
 
     @app.post("/api/runs", response_model=StartRunResponse)
-    async def start_run(req: StartRunRequest) -> StartRunResponse:
+    async def start_run(req: StartRunRequest, request: Request) -> StartRunResponse:
         try:
-            rec = await manager.start_run(req)
+            admission = await manager.admit(req, _client_ip(request))
         except ValueError as ex:  # invalid key format
             raise HTTPException(status_code=400, detail=str(ex)) from ex
-        return StartRunResponse(run_id=rec.run_id, status=rec.status, mode=rec.mode)
+        if admission.mode == "demo":
+            # Graceful refusal (§8.1/§8.6): no backend run; client replays cached.
+            return StartRunResponse(
+                run_id=None, status="demo", mode="demo", reason=admission.reason
+            )
+        rec = await manager.start_run(req, admission)
+        return StartRunResponse(
+            run_id=rec.run_id, status=rec.status, mode=rec.mode, reason=admission.reason
+        )
 
     @app.get("/api/runs/{run_id}", response_model=RunStatusResponse)
     async def run_status(run_id: str) -> RunStatusResponse:
@@ -84,7 +102,8 @@ def build_app(settings: Settings | None = None) -> FastAPI:
     sync_client = redis.Redis.from_url(settings.redis_url, decode_responses=True)
     async_client = aioredis.Redis.from_url(settings.redis_url, decode_responses=True)
     bus = EventBus(sync_client, async_client, ttl_seconds=settings.run_ttl_seconds)
-    manager = RunManager(bus)
+    limiter = Limiter(async_client, settings)
+    manager = RunManager(bus, settings, limiter)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
