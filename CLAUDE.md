@@ -308,6 +308,15 @@ These are **requirements**. Implement and enforce them, don't treat them as nice
    **or** a free, cached "example run" path so curious visitors cost nothing.
 7. **All API keys server-side only.** Keys live in the backend env, never shipped to the
    browser, never in client bundles.
+8. **Bring-your-own-key (BYOK) is the default funding model.** Visitors run on *their own*
+   provider + key, billed to *them*, so the showcase's own LLM spend floor is **$0**. A
+   no-key visitor gets the free cached example run (rule 6), never a billed one. An optional
+   *house* key (off by default) can fund key-less real runs, but only behind the daily spend
+   cap (rule 1) and the per-IP limit (rule 2); when the cap is hit it falls back to the
+   cached run. The visitor's key is the **one** key allowed past the browser — their own
+   transient, per-request input, **never stored or logged** (§10) — which does not weaken
+   rule 7 (that bars *our* provider keys from the client). The public GA4/GTM measurement
+   IDs (§11) are the only other client-side identifiers, and they are not secrets.
 
 ---
 

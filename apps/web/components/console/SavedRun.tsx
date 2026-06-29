@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Brief, CadenzaEvent } from "@cadenza/shared";
+import { BookCTA } from "@/components/BookCTA";
 import { CadenzaMark } from "@/components/CadenzaMark";
 import { AgentGraph } from "@/components/console/AgentGraph";
 import { type ConsoleState, initialState, reduce } from "@/lib/console/reducer";
@@ -223,9 +224,7 @@ export function SavedRun({ runId }: { runId: string }) {
                 by you, engineered to scale.
               </p>
             </div>
-            <Link href="/#book" className="btn btn-gold">
-              Book a build call →
-            </Link>
+            <BookCTA location="permalink" />
           </div>
         </div>
       ) : null}

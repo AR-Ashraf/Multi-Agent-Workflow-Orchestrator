@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { type CadenzaEvent, PROVIDERS, type ProviderId, assignModels } from "@cadenza/shared";
 import { CadenzaMark } from "@/components/CadenzaMark";
+import { BookCTA } from "@/components/BookCTA";
 import { AgentGraph } from "@/components/console/AgentGraph";
+import { track } from "@/lib/analytics";
 import { type RunController, createController } from "@/lib/console/controller";
 import { STAGE_COPY, type ConsoleState, initialState, reduce } from "@/lib/console/reducer";
 
@@ -23,13 +25,6 @@ const TAGS: Record<string, [string, string]> = {
   verify: ["v", "VERIFY"],
   human: ["h", "HUMAN"],
 };
-
-function track(event: string, params: Record<string, unknown> = {}) {
-  if (typeof window === "undefined") return;
-  const w = window as unknown as { dataLayer?: unknown[] };
-  w.dataLayer = w.dataLayer ?? [];
-  w.dataLayer.push({ event, ...params });
-}
 
 export function Console() {
   const [state, dispatch] = useReducer(rootReducer, undefined, initialState);
@@ -461,9 +456,7 @@ export function Console() {
                 engineered to scale, shipped in weeks not quarters.
               </p>
             </div>
-            <a href="#book" className="btn btn-gold" onClick={() => track("book_call")}>
-              Book a build call →
-            </a>
+            <BookCTA location="console_output" />
           </div>
         </div>
       ) : null}

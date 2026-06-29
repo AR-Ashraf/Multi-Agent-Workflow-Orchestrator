@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
+import { Analytics, GtmNoScript } from "@/components/Analytics";
 import "./globals.css";
 
 // Self-hosted at build time by next/font — no runtime CDN (CLAUDE.md §1).
@@ -68,11 +69,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={`${fraunces.variable} ${inter.variable} ${jetbrains.variable}`}>
       <body>
+        <GtmNoScript />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
         />
         {children}
+        <Analytics />
       </body>
     </html>
   );

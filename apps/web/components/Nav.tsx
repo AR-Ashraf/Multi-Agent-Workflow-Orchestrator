@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BookCTA } from "@/components/BookCTA";
 import { CadenzaMark } from "@/components/CadenzaMark";
 
 const LINKS = [
@@ -33,9 +34,9 @@ export function Nav() {
         </nav>
 
         <div className="nav-right">
-          <a href="#book" className="btn btn-gold btn-sm nav-cta-desktop">
+          <BookCTA className="btn btn-gold btn-sm nav-cta-desktop" location="nav">
             Book a build call
-          </a>
+          </BookCTA>
           <button
             className="nav-burger"
             aria-label="Toggle menu"
@@ -63,9 +64,9 @@ export function Nav() {
             {l.label}
           </a>
         ))}
-        <a href="#book" className="btn btn-gold" onClick={() => setOpen(false)}>
+        <BookCTA className="btn btn-gold" location="nav_mobile" onClick={() => setOpen(false)}>
           Book a build call
-        </a>
+        </BookCTA>
       </div>
     </header>
   );

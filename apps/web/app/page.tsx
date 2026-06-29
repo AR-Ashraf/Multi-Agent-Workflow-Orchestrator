@@ -1,3 +1,4 @@
+import { BookCTA } from "@/components/BookCTA";
 import { CadenzaMark } from "@/components/CadenzaMark";
 import { Console } from "@/components/console/Console";
 import { MiniFlow } from "@/components/MiniFlow";
@@ -232,9 +233,9 @@ export default function Home() {
               scale — let’s talk about your workflow.
             </p>
             <div className="fbtns">
-              <a href="#book" className="btn btn-gold">
+              <BookCTA className="btn btn-gold" location="final_band">
                 Book a build call
-              </a>
+              </BookCTA>
               <a href="#demo" className="btn btn-ghost" style={{ color: "#fff", borderColor: "rgba(255,255,255,.3)" }}>
                 Run the demo again
               </a>
@@ -262,7 +263,9 @@ export default function Home() {
             <a href="#why">Why it’s hard</a>
             <a href="#how">How it works</a>
             <a href="#tech">Under the hood</a>
-            <a href="#book">Book a build call</a>
+            <BookCTA className="" location="footer">
+              Book a build call
+            </BookCTA>
           </div>
         </div>
         <div className="wrap" style={{ marginTop: 22 }}>

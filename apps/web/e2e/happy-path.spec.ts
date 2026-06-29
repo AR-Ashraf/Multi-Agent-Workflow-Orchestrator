@@ -21,10 +21,27 @@ async function expectVerifiedBrief(page: import("@playwright/test").Page) {
   await expect(page.locator(".perma code")).toContainText("agents.devs-core.com/run/");
 }
 
+const dataLayerEvents = (page: import("@playwright/test").Page) =>
+  page.evaluate(() =>
+    ((window as unknown as { dataLayer?: { event?: string }[] }).dataLayer ?? [])
+      .map((d) => d.event)
+      .filter(Boolean),
+  );
+
 test("runs the full mocked workflow to a verified, cited brief", async ({ page }) => {
   await runToHitl(page);
   await page.locator(APPROVE).click();
   await expectVerifiedBrief(page);
+
+  // Lead-gen funnel events fire through the run (§11).
+  const fired = await dataLayerEvents(page);
+  expect(fired).toContain("demo_run_started");
+  expect(fired).toContain("demo_hitl_approved");
+  expect(fired).toContain("demo_run_completed");
+
+  // The conversion CTA fires book_call.
+  await page.locator(".output-zone .convert a").click();
+  expect(await dataLayerEvents(page)).toContain("book_call");
 });
 
 test("approve works by tap on a touch device", async ({ page, hasTouch }) => {
