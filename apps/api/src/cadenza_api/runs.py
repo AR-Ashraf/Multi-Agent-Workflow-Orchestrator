@@ -28,7 +28,9 @@ from .bus import EventBus
 from .byok import validate_key
 from .config import Settings
 from .limits import Limiter
+from .redact import redact_events
 from .schemas import StartRunRequest
+from .store import NullRunStore, RunStore, build_record, serialize_record
 
 
 class DecisionNotAllowed(Exception):
@@ -60,10 +62,17 @@ class RunRecord:
 
 
 class RunManager:
-    def __init__(self, bus: EventBus, settings: Settings, limiter: Limiter) -> None:
+    def __init__(
+        self,
+        bus: EventBus,
+        settings: Settings,
+        limiter: Limiter,
+        store: RunStore | None = None,
+    ) -> None:
         self.bus = bus
         self.settings = settings
         self.limiter = limiter
+        self.store: RunStore = store or NullRunStore()
         self._runs: dict[str, RunRecord] = {}
 
     def exists(self, run_id: str) -> bool:
@@ -143,6 +152,7 @@ class RunManager:
             rec.status = "error"
         finally:
             await self._settle(rec)
+            await self._persist(rec)
 
     async def _await_decision(self, rec: RunRecord) -> bool:
         """Wait for the human decision; return False if the approval window lapses."""
@@ -165,6 +175,46 @@ class RunManager:
             await self.limiter.settle_house_spend(rec.reservation, actual)
         except Exception:
             pass  # accounting must never crash a run
+
+    async def _persist(self, rec: RunRecord) -> None:
+        """Save a finished run for its permalink (§10) — PII/secrets redacted first."""
+        if not self.store.enabled or rec.status not in ("completed", "error"):
+            return
+        try:
+            events = redact_events(rec.session.events)
+            record = build_record(
+                run_id=rec.run_id,
+                status=rec.status,
+                events=events,
+                retention_days=self.settings.retention_days,
+            )
+            await self.store.save(record)
+        except Exception:
+            pass  # persistence must never crash a run
+
+    async def get_record(self, run_id: str) -> dict | None:
+        """Load a saved run for its permalink; fall back to a finished in-memory run."""
+        saved = await self.store.get(run_id)
+        if saved is not None:
+            return saved
+        rec = self._runs.get(run_id)
+        if rec is not None and rec.status in ("completed", "error"):
+            record = build_record(
+                run_id=rec.run_id,
+                status=rec.status,
+                events=redact_events(rec.session.events),
+                retention_days=self.settings.retention_days,
+            )
+            return serialize_record(record)
+        return None
+
+    async def delete_run(self, run_id: str) -> bool:
+        removed_db = await self.store.delete(run_id)
+        removed_mem = self._runs.pop(run_id, None) is not None
+        return removed_db or removed_mem
+
+    async def purge_expired(self) -> int:
+        return await self.store.purge_expired()
 
     async def submit_decision(self, run_id: str, decision: str, note: str | None = None) -> None:
         rec = self._runs.get(run_id)

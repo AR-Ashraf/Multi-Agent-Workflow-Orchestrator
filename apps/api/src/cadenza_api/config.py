@@ -17,6 +17,15 @@ class Settings(BaseSettings):
     # resources (a paused run holds a task + persisted state). 0 disables it.
     hitl_timeout_seconds: int = 600
 
+    # --- persistence & retention (CLAUDE.md §10) --------------------------
+    # SQLAlchemy async URL for saved runs/permalinks (postgresql+asyncpg://… in
+    # prod). Unset → persistence is disabled and permalinks 404 (local dev).
+    database_url: str | None = None
+    # Saved runs/logs/artifacts auto-expire after this many days.
+    retention_days: int = 30
+    # How often the background sweep purges expired runs. 0 disables the sweep.
+    purge_interval_seconds: int = 3600
+
     # --- cost & safety guardrails (CLAUDE.md §8) --------------------------
     # Per-IP rate limit (§8.2): at most N backend runs per window per IP; over
     # the limit the visitor is served the free cached replay. 0 disables it.

@@ -17,6 +17,7 @@ from cadenza_api.config import Settings
 from cadenza_api.limits import Limiter
 from cadenza_api.main import create_app
 from cadenza_api.runs import RunManager
+from cadenza_api.store import make_store
 
 
 @asynccontextmanager
@@ -26,13 +27,16 @@ async def make_client(**overrides: object) -> AsyncIterator[tuple[httpx.AsyncCli
     sync = fakeredis.FakeStrictRedis(server=server, decode_responses=True)
     aio = fakeredis.aioredis.FakeRedis(server=server, decode_responses=True)
     bus = EventBus(sync, aio, ttl_seconds=60)
-    manager = RunManager(bus, settings, Limiter(aio, settings))
+    store = make_store(settings.database_url, retention_days=settings.retention_days)
+    await store.init()
+    manager = RunManager(bus, settings, Limiter(aio, settings), store)
     transport = httpx.ASGITransport(app=create_app(manager))
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as c:
         try:
             yield c, manager
         finally:
             await manager.shutdown()
+            await store.aclose()
 
 
 async def wait_status(manager: RunManager, run_id: str, target: str, timeout: float = 5.0) -> None:
