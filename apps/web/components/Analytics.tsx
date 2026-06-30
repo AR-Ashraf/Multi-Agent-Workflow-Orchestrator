@@ -3,12 +3,12 @@ import Script from "next/script";
 /**
  * GA4 / GTM loader (CLAUDE.md §11). Renders nothing unless an id is configured,
  * so local/dev builds ship no trackers. Cross-domain linker ties the journey
- * across devs-core.com → agents.devs-core.com into one attributed session; IP
+ * across devs-core.com → cadenza.devs-core.com into one attributed session; IP
  * anonymization keeps it privacy-respecting (§10).
  */
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
-const DOMAINS = ["devs-core.com", "agents.devs-core.com"];
+const DOMAINS = ["devs-core.com", "cadenza.devs-core.com"];
 
 export function Analytics() {
   return (

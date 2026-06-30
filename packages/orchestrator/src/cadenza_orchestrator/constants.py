@@ -38,6 +38,37 @@ PRICE_PER_TOKEN = 0.000002  # mock estimate; real accounting comes from provider
 SMART_NODES: tuple[str, ...] = ("planner", "analyst", "critic")
 MECHANICAL_NODES: tuple[str, ...] = ("researcher-a", "researcher-b", "researcher-c", "writer")
 
+# Map the BYOK registry model id (models.ts) → the provider's REAL API model id.
+# The UI/registry uses friendly ids (claude-sonnet); the provider needs the dated
+# id. Unknown ids pass through unchanged so new models work without a code change.
+API_MODEL_IDS: dict[str, dict[str, str]] = {
+    "anthropic": {
+        "claude-opus": "claude-opus-4-8",
+        "claude-sonnet": "claude-sonnet-4-6",
+        "claude-haiku": "claude-haiku-4-5-20251001",
+    },
+    "openai": {
+        "gpt-5": "gpt-5",
+        "gpt-5-mini": "gpt-5-mini",
+        "gpt-4.1": "gpt-4.1",
+        "o4-mini": "o4-mini",
+    },
+}
+
+# The cheap/fast model used for mechanical steps when cost-routing is on (§8.4).
+FAST_API_MODEL: dict[str, str] = {
+    "anthropic": "claude-haiku-4-5-20251001",
+    "openai": "gpt-5-mini",
+}
+
+
+def api_model_id(provider: str, model_id: str, *, fast: bool = False) -> str:
+    """Resolve a registry model id to the provider's real API model id."""
+    if fast and provider in FAST_API_MODEL:
+        return FAST_API_MODEL[provider]
+    return API_MODEL_IDS.get(provider, {}).get(model_id, model_id)
+
+
 PROVIDERS: dict[str, dict] = {
     "anthropic": {
         "label": "Anthropic (Claude)",

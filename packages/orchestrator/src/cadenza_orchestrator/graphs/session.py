@@ -10,6 +10,7 @@ Redis pub/sub) as it is produced.
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import Any
 
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import Command
@@ -18,6 +19,7 @@ from ..constants import MAX_STEPS, MAX_TOKENS
 from ..context import BudgetExceeded, RunContext
 from ..events import Emitter, Event
 from ..llm import LLMClient, MockLLMClient
+from ..tools import SearchClient, WebFetcher
 from .research_graph import _emit_preamble, build_graph
 
 
@@ -32,6 +34,8 @@ class RunSession:
         routing: bool = True,
         mode: str = "demo",
         llm: LLMClient | None = None,
+        search: SearchClient | None = None,
+        fetch: WebFetcher | None = None,
         sink: Callable[[Event], None] | None = None,
         max_tokens: int | None = None,
         max_steps: int | None = None,
@@ -43,6 +47,13 @@ class RunSession:
         self.routing = routing
         self.mode = mode
         self.emitter = Emitter(run_id, sink)
+        # Tool clients default to offline fixtures (mock/demo); the API injects
+        # real Tavily + Firecrawl (our server-side keys) for live BYOK runs.
+        ctx_kwargs: dict[str, Any] = {}
+        if search is not None:
+            ctx_kwargs["search"] = search
+        if fetch is not None:
+            ctx_kwargs["fetch"] = fetch
         self.ctx = RunContext(
             emitter=self.emitter,
             llm=llm or MockLLMClient(),
@@ -53,6 +64,7 @@ class RunSession:
             mode=mode,
             max_tokens=max_tokens if max_tokens is not None else MAX_TOKENS,
             max_steps=max_steps if max_steps is not None else MAX_STEPS,
+            **ctx_kwargs,
         )
         self._graph = build_graph()
         self._config: RunnableConfig = {"configurable": {"thread_id": run_id, "ctx": self.ctx}}

@@ -13,7 +13,9 @@ from dataclasses import dataclass, field
 from .constants import (
     MAX_STEPS,
     MAX_TOKENS,
+    MECHANICAL_NODES,
     PRICE_PER_TOKEN,
+    api_model_id,
     model_badge_for,
 )
 from .events import Emitter
@@ -50,6 +52,12 @@ class RunContext:
 
     def model_label(self, node_id: str) -> str:
         return model_badge_for(node_id, self.provider, self.model_id, self.routing)
+
+    def api_model_for(self, node_id: str) -> str:
+        """Real API model id for a node — the fast model on mechanical steps when
+        cost-routing is on (§8.4), the selected model otherwise."""
+        fast = self.routing and node_id in MECHANICAL_NODES
+        return api_model_id(self.provider, self.model_id, fast=fast)
 
     def step(self) -> None:
         """Count a node execution against the step ceiling."""

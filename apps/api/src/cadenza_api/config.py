@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     redis_url: str = "redis://localhost:6379/0"
     run_ttl_seconds: int = 1800
-    cors_origins: list[str] = ["http://localhost:3000", "https://agents.devs-core.com"]
+    cors_origins: list[str] = ["http://localhost:3000", "https://cadenza.devs-core.com"]
 
     # How long a run may sit at the HITL checkpoint before it's cancelled to free
     # resources (a paused run holds a task + persisted state). 0 disables it.
@@ -45,6 +45,17 @@ class Settings(BaseSettings):
     # even on BYOK runs so a runaway loop can't burn the visitor's tokens.
     per_run_max_tokens: int = 250_000
     per_run_max_steps: int = 24
+
+    # --- real LLM + web-research adapters (Unit 13) -----------------------
+    # When True (prod default), a keyed run calls the real provider with the
+    # visitor's key. Tests set this False to keep the deterministic mock graph.
+    real_llm_enabled: bool = True
+    # Server-side web-research keys — OUR keys, not the visitor's (§5/§8.7). With
+    # these unset, live runs fall back to the offline fixtures (degraded research).
+    search_provider: str = "tavily"  # "tavily" | "brave"
+    tavily_api_key: str | None = None
+    brave_api_key: str | None = None
+    firecrawl_api_key: str | None = None
 
 
 def get_settings() -> Settings:

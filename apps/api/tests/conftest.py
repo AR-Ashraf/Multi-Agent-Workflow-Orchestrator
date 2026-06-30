@@ -38,8 +38,8 @@ def bus(redis_server: fakeredis.FakeServer, async_redis: fakeredis.aioredis.Fake
 @pytest.fixture
 def settings() -> Settings:
     # Default test posture: rate limit effectively off, house funding off
-    # (Option A — pure BYOK, $0 floor). Limit-specific tests build their own.
-    return Settings(rate_limit_max_runs=1000, house_api_key=None)
+    # (Option A — pure BYOK, $0 floor), and the mock graph (no live LLM calls).
+    return Settings(rate_limit_max_runs=1000, house_api_key=None, real_llm_enabled=False)
 
 
 @pytest.fixture

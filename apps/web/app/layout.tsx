@@ -8,7 +8,7 @@ const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"], wei
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 const jetbrains = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"], weight: ["400", "500", "600"] });
 
-const SITE = "https://agents.devs-core.com";
+const SITE = "https://cadenza.devs-core.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),

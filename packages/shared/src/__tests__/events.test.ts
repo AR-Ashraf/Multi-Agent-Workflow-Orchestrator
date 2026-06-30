@@ -35,7 +35,7 @@ const SAMPLES: Record<CadenzaEventType, Record<string, unknown>> = {
       title: "T", byline: "b", query: "q", model: "Sonnet", mode: "demo",
       sections: [{ heading: "H", body: "B" }],
       sources: [{ id: "Source 1", label: "L" }],
-      claimsVerified: { verified: 3, total: 3 }, permalink: "agents.devs-core.com/run/x",
+      claimsVerified: { verified: 3, total: 3 }, permalink: "cadenza.devs-core.com/run/x",
     },
   },
   "run.completed": { type: "run.completed", tokens: 100, costUsd: 0.2, elapsedMs: 1000, claimsVerified: { verified: 3, total: 3 } },

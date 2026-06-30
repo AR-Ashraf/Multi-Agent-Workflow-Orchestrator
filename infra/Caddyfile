@@ -1,16 +1,24 @@
-# ==========================================================================
-# PLACEHOLDER — reverse proxy / TLS config is not defined yet.
+# Cadenza reverse proxy + automatic TLS (CLAUDE.md §3, §13).
 #
-# This file will configure Caddy to terminate SSL and route traffic for
-# agents.devs-core.com to the web (Next.js) and api (FastAPI) services.
-# It will be populated during the "Docker / Caddy / CI" step of the build
-# (see the Planned build order in CLAUDE.md).
-#
-# Planned (illustrative only — NOT active config):
-#   agents.devs-core.com {
-#       handle /api/*  -> reverse_proxy api:8000
-#       handle         -> reverse_proxy web:3000
-#   }
-#
-# Do not add real routing config here until that build step.
-# ==========================================================================
+# CADENZA_DOMAIN drives the site address: set it to cadenza.devs-core.com in prod
+# for automatic Let's Encrypt TLS; it defaults to localhost (Caddy serves a local
+# self-signed cert) for `docker compose up` on a laptop.
+
+{$CADENZA_DOMAIN:localhost} {
+	encode zstd gzip
+
+	# API gateway (REST + SSE). flush_interval -1 disables response buffering so
+	# Server-Sent Events stream to the browser immediately. Caddy sets
+	# X-Forwarded-For, which the gateway reads for per-IP rate limiting (§8.2).
+	@api path /api/* /healthz
+	handle @api {
+		reverse_proxy api:8000 {
+			flush_interval -1
+		}
+	}
+
+	# Everything else → the Next.js frontend.
+	handle {
+		reverse_proxy web:3000
+	}
+}

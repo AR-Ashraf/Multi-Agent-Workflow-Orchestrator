@@ -22,7 +22,9 @@ from cadenza_api.store import make_store
 
 @asynccontextmanager
 async def make_client(**overrides: object) -> AsyncIterator[tuple[httpx.AsyncClient, RunManager]]:
-    settings = Settings(**overrides)  # type: ignore[arg-type]
+    # Default to the mock graph so limit/hitl/persistence tests stay offline;
+    # overrides win if a test opts into the real path.
+    settings = Settings(**{"real_llm_enabled": False, **overrides})  # type: ignore[arg-type]
     server = fakeredis.FakeServer()
     sync = fakeredis.FakeStrictRedis(server=server, decode_responses=True)
     aio = fakeredis.aioredis.FakeRedis(server=server, decode_responses=True)

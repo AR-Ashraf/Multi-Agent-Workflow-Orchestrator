@@ -22,7 +22,7 @@ const SAMPLE_BRIEF: Brief = {
   sections: [{ heading: "h", body: "b" }],
   sources: [{ id: "Source 1", label: "L" }],
   claimsVerified: { verified: 1, total: 1 },
-  permalink: "agents.devs-core.com/run/x",
+  permalink: "cadenza.devs-core.com/run/x",
 };
 
 /** One schema-valid sample per event type — the FE side of the contract. */
@@ -141,7 +141,7 @@ describe("full mocked run folds to a verified, cited brief", () => {
   it("releases a brief with 3-of-3 claims verified and a permalink", () => {
     expect(final.brief).not.toBeNull();
     expect(final.brief?.claimsVerified).toEqual({ verified: 3, total: 3 });
-    expect(final.brief?.permalink).toBe("agents.devs-core.com/run/demo-run");
+    expect(final.brief?.permalink).toBe("cadenza.devs-core.com/run/demo-run");
   });
 
   it("clears the HITL gate and the injection indicator by the end", () => {

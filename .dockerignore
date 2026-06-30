@@ -1,0 +1,18 @@
+# Build context is the repo root for both image builds.
+**/node_modules
+**/.next
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/*.pyc
+**/.env
+**/.git
+**/.turbo
+**/dist
+**/coverage
+**/playwright-report
+**/test-results
+apps/*/tests
+packages/*/tests
+.claude

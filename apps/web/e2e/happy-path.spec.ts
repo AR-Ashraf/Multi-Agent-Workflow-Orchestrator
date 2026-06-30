@@ -18,7 +18,7 @@ async function expectVerifiedBrief(page: import("@playwright/test").Page) {
   await expect(stamp).toBeVisible({ timeout: 30_000 });
   await expect(stamp).toContainText("3 of 3");
   await expect(page.locator(".brief h3.bt")).toContainText("Market Brief");
-  await expect(page.locator(".perma code")).toContainText("agents.devs-core.com/run/");
+  await expect(page.locator(".perma code")).toContainText("cadenza.devs-core.com/run/");
 }
 
 const dataLayerEvents = (page: import("@playwright/test").Page) =>

@@ -37,7 +37,7 @@ def _events(query: str) -> list[dict]:
                 "claimsVerified": {"verified": 3, "total": 3},
                 "mode": "live",
                 "model": "Claude Sonnet",
-                "permalink": "agents.devs-core.com/run/x",
+                "permalink": "cadenza.devs-core.com/run/x",
             },
             "seq": 2,
         },

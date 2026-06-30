@@ -32,7 +32,7 @@ The same engine later powers secondary workflows (outreach draft, content outlin
 | Observability | **Langfuse** (self-hosted) |
 | Packaging | Docker + docker-compose, **Caddy** proxy/SSL |
 | CI/CD | GitHub Actions |
-| Deploy | DigitalOcean droplet → `agents.devs-core.com` |
+| Deploy | DigitalOcean droplet → `cadenza.devs-core.com` |
 
 ## Monorepo layout
 

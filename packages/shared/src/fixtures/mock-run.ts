@@ -302,6 +302,6 @@ function buildBrief(query: string, modelLabel: string, mode: RunMode, runId: str
     ],
     sources: seed.sources.map((label, i) => ({ id: `Source ${i + 1}`, label })),
     claimsVerified: { verified: 3, total: 3 },
-    permalink: `agents.devs-core.com/run/${runId}`,
+    permalink: `cadenza.devs-core.com/run/${runId}`,
   };
 }

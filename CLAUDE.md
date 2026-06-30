@@ -110,7 +110,7 @@ The cost/safety knobs in §8 are internal guardrails, **not** a billing system.
 | **Redis** | One tool for run state, event pub/sub (fan-out to SSE), per-IP rate limiting, and caching of common inputs. |
 | **PostgreSQL** | Durable store for saved runs, logs, artifacts, and shareable permalinks. |
 | **Langfuse (self-hosted)** | LLM observability — traces, token/cost accounting, debugging agent steps, and the eval harness sink (§7) — without sending data to a third party. |
-| **Docker + docker-compose, Caddy, GitHub Actions** | Reproducible local + prod env; Caddy gives automatic TLS for `agents.devs-core.com`; Actions for CI/CD. |
+| **Docker + docker-compose, Caddy, GitHub Actions** | Reproducible local + prod env; Caddy gives automatic TLS for `cadenza.devs-core.com`; Actions for CI/CD. |
 | **DigitalOcean droplet** | Simple, cost-predictable host for a single self-contained demo stack. |
 
 ---
@@ -389,7 +389,7 @@ calls. Conversion is a first-class feature, not an afterthought.
   - `book_call` (the conversion event)
   *(optional secondary: `brief_downloaded`, `permalink_shared`.)*
 - **Cross-domain measurement.** Configure GA4/GTM cross-domain tracking between
-  **`devs-core.com`** and **`agents.devs-core.com`** so a visitor's journey from the main
+  **`devs-core.com`** and **`cadenza.devs-core.com`** so a visitor's journey from the main
   site → demo → book-call is one attributed session.
 - **GA4/GTM IDs are client-side and public** (`NEXT_PUBLIC_GA_ID` / GTM container) — that's
   the one exception to "no keys in the browser." Still no *provider/API* keys client-side (§8).
@@ -424,7 +424,7 @@ Build in this sequence; each step should be demoable/testable before the next.
 11. **Persistence & permalinks** — Postgres for saved runs/logs/artifacts + shareable links,
     with the retention policy from §10.
 12. **Lead-gen layer** — "Book a build call" CTA + GA4/GTM events + cross-domain tracking (§11).
-13. **Docker / Caddy / CI** — docker-compose stack, Caddy TLS for `agents.devs-core.com`,
+13. **Docker / Caddy / CI** — docker-compose stack, Caddy TLS for `cadenza.devs-core.com`,
     GitHub Actions (lint/format/type/test from §6–§7), deploy to the DigitalOcean droplet.
 
 (Real Claude calls replace the mocks once the graph + tools are stable, before or alongside

@@ -23,6 +23,14 @@ import secrets
 from dataclasses import dataclass, field
 
 from cadenza_orchestrator import RunSession
+from cadenza_orchestrator.llm import LLMClient, LLMError, make_llm_client
+from cadenza_orchestrator.tools import (
+    FirecrawlFetcher,
+    SearchClient,
+    ToolError,
+    WebFetcher,
+    make_search_client,
+)
 
 from .bus import EventBus
 from .byok import validate_key
@@ -31,6 +39,10 @@ from .limits import Limiter
 from .redact import redact_events
 from .schemas import StartRunRequest
 from .store import NullRunStore, RunStore, build_record, serialize_record
+
+# Providers with a real LLM adapter today (Unit 13). Others run only the cached
+# demo until their adapter lands.
+SUPPORTED_LLM_PROVIDERS = {"anthropic", "openai"}
 
 
 class DecisionNotAllowed(Exception):
@@ -94,6 +106,9 @@ class RunManager:
             ok, why = validate_key(req.provider, req.api_key)
             if not ok:
                 raise ValueError(why)
+            if self.settings.real_llm_enabled and req.provider not in SUPPORTED_LLM_PROVIDERS:
+                # No real adapter yet → serve the cached demo rather than a broken run.
+                return Admission("demo", "none", reason="provider_unsupported")
             return Admission("live", "visitor")  # billed to the visitor's key
 
         # No key: optionally fund from the house key, bounded by the daily cap.
@@ -104,9 +119,41 @@ class RunManager:
         reason = "daily_cap" if self.settings.house_api_key else "no_key"
         return Admission("demo", "none", reason=reason)
 
+    def _build_llm(self, req: StartRunRequest, admission: Admission) -> LLMClient | None:
+        """Real provider client for a live run (None → RunSession uses the mock)."""
+        if not self.settings.real_llm_enabled:
+            return None
+        key = req.api_key or (
+            self.settings.house_api_key if admission.funded_by == "house" else None
+        )
+        if not key:
+            return None
+        try:
+            return make_llm_client(req.provider, key)
+        except LLMError:
+            return None  # unsupported provider — admit() already guards this
+
+    def _build_tools(self) -> tuple[SearchClient | None, WebFetcher | None]:
+        """Real web-research clients from OUR server-side keys (None → fixtures)."""
+        s = self.settings
+        if not s.real_llm_enabled:
+            return None, None
+        search: SearchClient | None = None
+        fetch: WebFetcher | None = None
+        search_key = s.tavily_api_key if s.search_provider == "tavily" else s.brave_api_key
+        if search_key:
+            try:
+                search = make_search_client(s.search_provider, search_key)
+            except ToolError:
+                search = None
+        if s.firecrawl_api_key:
+            fetch = FirecrawlFetcher(s.firecrawl_api_key)
+        return search, fetch
+
     async def start_run(self, req: StartRunRequest, admission: Admission) -> RunRecord:
         """Create + drive a backend run. Only valid for a `live` admission."""
         run_id = secrets.token_urlsafe(8)
+        search, fetch = self._build_tools()
         session = RunSession(
             run_id=run_id,
             query=req.query,
@@ -114,6 +161,9 @@ class RunManager:
             model_id=req.model,
             routing=req.routing,
             mode="live",
+            llm=self._build_llm(req, admission),
+            search=search,
+            fetch=fetch,
             sink=lambda event: self.bus.publish(run_id, event),
             max_tokens=self.settings.per_run_max_tokens,
             max_steps=self.settings.per_run_max_steps,

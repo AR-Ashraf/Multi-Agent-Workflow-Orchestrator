@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# The lint / format / type / test gate from CLAUDE.md §6–§7. Everything runs on
+# mocked LLMs / fakeredis / SQLite, so CI needs no provider keys or services.
+jobs:
+  python:
+    name: python (orchestrator + api)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: orchestrator — lint / format / types / tests
+        working-directory: packages/orchestrator
+        run: |
+          uv sync
+          uv run ruff check .
+          uv run black --check .
+          uv run pyright
+          uv run pytest -q
+
+      - name: api — lint / format / types / tests
+        working-directory: apps/api
+        run: |
+          uv sync
+          uv run ruff check .
+          uv run black --check .
+          uv run pyright
+          uv run pytest -q
+
+  node:
+    name: web + shared
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r --if-present typecheck
+      - run: pnpm -r --if-present lint
+      - run: pnpm -r --if-present test
+      - run: pnpm --filter web build
+
+      - name: web — playwright e2e (mocked run)
+        working-directory: apps/web
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          pnpm exec playwright test

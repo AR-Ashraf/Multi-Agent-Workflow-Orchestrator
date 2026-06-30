@@ -1,18 +1,110 @@
-# ==========================================================================
-# PLACEHOLDER — infrastructure is not defined yet.
-#
-# This file is intentionally empty of service definitions. It will be
-# populated during the "Docker / Caddy / CI" step of the build (see the
-# Planned build order in CLAUDE.md).
-#
-# Planned services:
-#   web          Next.js frontend
-#   api          FastAPI gateway + SSE
-#   orchestrator LangGraph worker (packages/orchestrator)
-#   redis        run state, event pub/sub, rate limiting, cache
-#   postgres     saved runs, logs, artifacts, shareable links
-#   langfuse     self-hosted observability
-#   caddy        reverse proxy + automatic TLS (agents.devs-core.com)
-#
-# Do not add real service config here until that build step.
-# ==========================================================================
+# Cadenza full stack (CLAUDE.md §3, §4, §13). Run from the repo root:
+#   docker compose -f infra/docker-compose.yml up --build
+# Build args / secrets come from the repo-root .env (see .env.example).
+# Langfuse is optional: `--profile observability` (needs its own DB; see note).
+name: cadenza
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cadenza
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cadenza}
+      POSTGRES_DB: cadenza
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cadenza"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    environment:
+      CADENZA_REDIS_URL: redis://redis:6379/0
+      CADENZA_DATABASE_URL: postgresql+asyncpg://cadenza:${POSTGRES_PASSWORD:-cadenza}@postgres:5432/cadenza
+      CADENZA_CORS_ORIGINS: '["https://${CADENZA_DOMAIN:-localhost}"]'
+      # House funding is OFF by default (pure BYOK, $0 floor — §8). Set to fund
+      # key-less real runs behind the daily spend cap.
+      CADENZA_HOUSE_API_KEY: ${CADENZA_HOUSE_API_KEY:-}
+      # Real LLM adapters (Unit 13): a keyed run calls the visitor's provider.
+      CADENZA_REAL_LLM_ENABLED: ${CADENZA_REAL_LLM_ENABLED:-true}
+      # Server-side web-research keys — OUR keys, not the visitor's (§5/§8.7).
+      CADENZA_SEARCH_PROVIDER: ${SEARCH_PROVIDER:-tavily}
+      CADENZA_TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+      CADENZA_FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Public, client-side measurement ids / URLs only (§11). The browser
+        # talks to the API through Caddy on the same origin, so the default base
+        # is empty (same-origin /api/*). Set a full URL only for a split origin.
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE-}
+        NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID-}
+        NEXT_PUBLIC_GTM_ID: ${NEXT_PUBLIC_GTM_ID-}
+        NEXT_PUBLIC_BOOK_URL: ${NEXT_PUBLIC_BOOK_URL-}
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      CADENZA_DOMAIN: ${CADENZA_DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    depends_on:
+      - web
+      - api
+    restart: unless-stopped
+
+  # Optional self-hosted observability (§3). Needs its own `langfuse` database —
+  # create it once: `docker compose exec postgres createdb -U cadenza langfuse`.
+  langfuse:
+    image: langfuse/langfuse:2
+    profiles: ["observability"]
+    environment:
+      DATABASE_URL: postgresql://cadenza:${POSTGRES_PASSWORD:-cadenza}@postgres:5432/langfuse
+      NEXTAUTH_URL: http://localhost:3001
+      NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET:-please-change-me}
+      SALT: ${LANGFUSE_SALT:-please-change-me}
+      TELEMETRY_ENABLED: "false"
+    ports:
+      - "3001:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  caddydata:
+  caddyconfig:

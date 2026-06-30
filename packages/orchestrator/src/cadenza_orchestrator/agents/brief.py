@@ -41,5 +41,5 @@ def build_brief(query: str, model_label: str, mode: str, run_id: str) -> dict[st
         ],
         "sources": [{"id": f"Source {i + 1}", "label": s} for i, s in enumerate(sources)],
         "claimsVerified": {"verified": 3, "total": 3},
-        "permalink": f"agents.devs-core.com/run/{run_id}",
+        "permalink": f"cadenza.devs-core.com/run/{run_id}",
     }
