@@ -24,6 +24,8 @@ class ResearchState(TypedDict, total=False):
     # analyst → hitl
     insights: str
     direction: list[str]
+    # analyst → writer/critic/output (real path): numbered, citable sources
+    sources: list[dict[str, Any]]
 
     # hitl → writer
     hitl_decision: str
@@ -37,6 +39,7 @@ class ResearchState(TypedDict, total=False):
     claims: list[dict[str, Any]]
     verdict: str  # "accept" | "retry"
     failed_claims: list[str]  # claim ids the Critic flagged as unsupported
+    claims_verified: dict[str, int]  # critic → output: verified/total count
 
     # terminal
     brief: dict[str, Any]

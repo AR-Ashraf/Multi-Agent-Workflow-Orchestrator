@@ -201,8 +201,9 @@ export function Console() {
                 }}
               >
                 {Object.values(PROVIDERS).map((p) => (
-                  <option key={p.id} value={p.id}>
+                  <option key={p.id} value={p.id} disabled={!p.supported}>
                     {p.label}
+                    {p.supported ? "" : " — coming soon"}
                   </option>
                 ))}
               </select>

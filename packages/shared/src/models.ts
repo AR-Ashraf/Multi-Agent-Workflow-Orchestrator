@@ -35,12 +35,15 @@ export interface ProviderInfo {
   readonly models: readonly ModelOption[];
   /** Index into `models` used as the default selection. */
   readonly defaultModelIndex: number;
+  /** Whether a real BYOK adapter exists today (else the UI shows "coming soon"). */
+  readonly supported: boolean;
 }
 
 export const PROVIDERS: Record<ProviderId, ProviderInfo> = {
   anthropic: {
     id: "anthropic",
     label: "Anthropic (Claude)",
+    supported: true,
     keyHint: "sk-ant-...",
     fastBadge: "Haiku",
     models: [
@@ -53,6 +56,7 @@ export const PROVIDERS: Record<ProviderId, ProviderInfo> = {
   openai: {
     id: "openai",
     label: "OpenAI (GPT)",
+    supported: true,
     keyHint: "sk-...",
     fastBadge: "mini",
     models: [
@@ -66,6 +70,7 @@ export const PROVIDERS: Record<ProviderId, ProviderInfo> = {
   google: {
     id: "google",
     label: "Google (Gemini)",
+    supported: false,
     keyHint: "AIza...",
     fastBadge: "Flash",
     models: [
@@ -77,6 +82,7 @@ export const PROVIDERS: Record<ProviderId, ProviderInfo> = {
   groq: {
     id: "groq",
     label: "Groq (Llama / Mixtral)",
+    supported: false,
     keyHint: "gsk_...",
     fastBadge: "8B",
     models: [
@@ -89,6 +95,7 @@ export const PROVIDERS: Record<ProviderId, ProviderInfo> = {
   mistral: {
     id: "mistral",
     label: "Mistral",
+    supported: false,
     keyHint: "...",
     fastBadge: "Small",
     models: [

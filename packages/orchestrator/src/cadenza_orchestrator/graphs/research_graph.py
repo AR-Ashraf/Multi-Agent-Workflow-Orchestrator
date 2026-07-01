@@ -75,7 +75,16 @@ def output_node(state: ResearchState, config: RunnableConfig) -> dict[str, Any]:
     e.edge_status("critic->output", "done")
     e.node_status("output", "done")
 
-    brief = build_brief(ctx.query, ctx.model_label("planner"), ctx.mode, e.run_id)
+    cv = state.get("claims_verified") or {"verified": 3, "total": 3}
+    brief = build_brief(
+        ctx.query,
+        ctx.model_label("planner"),
+        ctx.mode,
+        e.run_id,
+        draft=state.get("draft"),
+        sources=state.get("sources"),
+        claims_verified=cv,
+    )
     e.log(
         "verify",
         "Workflow",
@@ -83,7 +92,7 @@ def output_node(state: ResearchState, config: RunnableConfig) -> dict[str, Any]:
         "output",
     )
     e.brief_released(brief)
-    e.run_completed({"verified": 3, "total": 3})
+    e.run_completed(cv)
     e.run_state("done", "Complete")
 
     return {"brief": brief}
