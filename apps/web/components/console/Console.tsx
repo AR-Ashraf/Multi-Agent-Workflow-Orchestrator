@@ -9,6 +9,9 @@ import { track } from "@/lib/analytics";
 import { type RunController, createController } from "@/lib/console/controller";
 import { STAGE_COPY, type ConsoleState, initialState, reduce } from "@/lib/console/reducer";
 
+/** Live (BYOK) runs need the FastAPI backend. Without it the console plays the cached example run only. */
+const LIVE_RUNS = Boolean(process.env.NEXT_PUBLIC_API_BASE);
+
 type Action = { kind: "event"; event: CadenzaEvent } | { kind: "reset" };
 const rootReducer = (s: ConsoleState, a: Action): ConsoleState =>
   a.kind === "reset" ? initialState() : reduce(s, a.event);
@@ -104,9 +107,15 @@ export function Console() {
     startTs.current = performance.now();
     if (clock.current) clearInterval(clock.current);
     clock.current = setInterval(() => setElapsed(performance.now() - startTs.current), 100);
-    track("demo_run_started", { mode: apiKey ? "live" : "demo", provider });
+    track("demo_run_started", { mode: LIVE_RUNS && apiKey ? "live" : "demo", provider });
     controllerRef.current?.start(
-      { query: query.trim() || CHIPS[0]!.q, provider, modelId, routing, apiKey: apiKey || undefined },
+      {
+        query: query.trim() || CHIPS[0]!.q,
+        provider,
+        modelId,
+        routing,
+        apiKey: (LIVE_RUNS && apiKey) || undefined,
+      },
       (event) => dispatch({ kind: "event", event }),
     );
   };
@@ -176,7 +185,8 @@ export function Console() {
       </div>
 
       <div className="query-zone">
-        {/* BYOK */}
+        {/* BYOK — only when a backend is configured */}
+        {LIVE_RUNS ? (
         <div className="model-config">
           <div className="mc-head">
             <div className="mc-title">
@@ -251,6 +261,17 @@ export function Console() {
             </div>
           </div>
         </div>
+        ) : (
+          <div className="model-config">
+            <div className="mc-head">
+              <div className="mc-title">▶ Recorded demo run</div>
+              <div className="keystatus">
+                <span className="led" />
+                Live runs on your own API key are coming soon
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="ql">Your research question</div>
         <div className="query-input">

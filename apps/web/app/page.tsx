@@ -83,7 +83,9 @@ export default function Home() {
               fontFamily: "var(--mono)",
             }}
           >
-            No API key? It runs a free cached demo. Add your key to run it live on your own tokens.
+            {process.env.NEXT_PUBLIC_API_BASE
+              ? "No API key? It runs a free cached demo. Add your key to run it live on your own tokens."
+              : "This is a recorded run of the real workflow. Live runs on your own API key are coming soon."}
           </p>
         </div>
       </section>
