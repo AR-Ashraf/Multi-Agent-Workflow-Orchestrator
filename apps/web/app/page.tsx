@@ -35,7 +35,7 @@ export default function Home() {
             <div className="trust">
               <div className="trust-label">Production stack · bring your own model &amp; key</div>
               <div className="trust-row">
-                <span>Claude / GPT / Gemini</span>
+                <span>Claude / GPT</span>
                 <span className="dot">·</span>
                 <span>LangGraph</span>
                 <span className="dot">·</span>
@@ -208,7 +208,7 @@ export default function Home() {
           <div className="tech-grid">
             {[
               ["LangGraph", "Stateful multi-agent graph with native human-in-the-loop interrupts & retries."],
-              ["Bring your own model", "Run on your own Claude, GPT, Gemini, Llama or Mistral key — your tokens, your bill, never ours."],
+              ["Bring your own model", "Run on your own Claude or GPT key (Gemini, Llama and Mistral next) — your tokens, your bill, never ours."],
               ["Model routing", "Cheaper model for mechanical steps, your strongest for reasoning — cost controlled on purpose."],
               ["FastAPI + SSE", "Async gateway streaming every agent event to the browser in real time."],
               ["React Flow", "The on-screen graph mirrors the orchestration graph 1:1."],
