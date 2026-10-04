@@ -31,7 +31,7 @@ class FirecrawlFetcher:
             resp = self._http.post(
                 f"{self._base}/v2/scrape",
                 headers={"Authorization": f"Bearer {self._key}"},
-                json={"url": url, "formats": ["markdown"], "only_main_content": True},
+                json={"url": url, "formats": ["markdown"], "onlyMainContent": True},
             )
             resp.raise_for_status()
         except httpx.HTTPStatusError as ex:
@@ -49,6 +49,8 @@ class FirecrawlFetcher:
 
         data = body.get("data") or {}
         meta = data.get("metadata") or {}
+        if not (data.get("markdown") or "").strip():
+            raise ToolError("firecrawl", "empty page content")
         return FetchedPage(
             url=meta.get("sourceURL", url),
             title=meta.get("title", ""),

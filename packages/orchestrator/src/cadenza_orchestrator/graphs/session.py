@@ -16,7 +16,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.types import Command
 
 from ..constants import MAX_STEPS, MAX_TOKENS
-from ..context import BudgetExceeded, RunContext
+from ..context import BudgetExceeded, RunAborted, RunContext
 from ..events import Emitter, Event
 from ..llm import LLMClient, MockLLMClient
 from ..tools import SearchClient, WebFetcher
@@ -91,6 +91,9 @@ class RunSession:
         except BudgetExceeded as ex:
             self._fail(ex)
             return False
+        except RunAborted as ex:
+            self._abort(ex)
+            return False
         self.paused = "__interrupt__" in result
         self.completed = not self.paused
         return self.paused
@@ -102,8 +105,16 @@ class RunSession:
         except BudgetExceeded as ex:
             self._fail(ex)
             return
+        except RunAborted as ex:
+            self._abort(ex)
+            return
         self.paused = False
         self.completed = True
+
+    def _abort(self, ex: RunAborted) -> None:
+        self.errored = True
+        self.emitter.error(ex.code, ex.message, recoverable=False)
+        self.emitter.run_state("error", ex.label)
 
     def _fail(self, ex: BudgetExceeded) -> None:
         self.errored = True

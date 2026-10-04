@@ -33,6 +33,18 @@ class BudgetExceeded(Exception):
         self.cap = cap
 
 
+
+class RunAborted(Exception):
+    """Raised when a real run cannot honestly continue (e.g. no readable sources).
+    The session turns it into a terminal error event the UI shows to the visitor."""
+
+    def __init__(self, code: str, message: str, label: str) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.label = label
+
+
 @dataclass
 class RunContext:
     emitter: Emitter

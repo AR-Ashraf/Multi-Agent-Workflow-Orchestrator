@@ -18,7 +18,7 @@ from ..constants import MAX_CRITIC_RETRIES
 from ..context import RunContext
 from ..corpus import SOURCES, verify_claim
 from ..state import ResearchState
-from ._base import ctx_from
+from ._base import ctx_from, is_real
 
 
 def _verify_and_emit(
@@ -42,9 +42,13 @@ def _verify_and_emit(
         f'{prefix}claim "{claim["text"]}" → {status} in {claim["source_id"]}. {mark}',
         "critic",
     )
-    ctx.charge(
-        ctx.llm.complete(system="Critic", prompt=f"verify {claim['id']}", model=ctx.model_id)
-    )
+    if not is_real(ctx):
+        # Mock path only: simulate the Critic's model call for the meters. On a real
+        # run the check above is deterministic (claim value vs. cited source text), so
+        # there is no model call to make — and `ctx.model_id` is a UI id, not an API id.
+        ctx.charge(
+            ctx.llm.complete(system="Critic", prompt=f"verify {claim['id']}", model=ctx.model_id)
+        )
     return verdict.grounded
 
 
@@ -78,7 +82,12 @@ def critic(state: ResearchState, config: RunnableConfig) -> dict[str, Any]:
                 "verdict: retry — fix the unsupported claim(s) to match the cited source, then re-verify.",
                 "critic",
             )
-            return {"critic_attempts": attempts + 1, "verdict": "retry", "failed_claims": failed}
+            return {
+                "critic_attempts": attempts + 1,
+                "verdict": "retry",
+                "failed_claims": failed,
+                "claims_verified": {"verified": total - len(failed), "total": total},
+            }
 
         e.node_status("critic", "done")
         e.edge_status("critic->output", "flow")
@@ -107,9 +116,23 @@ def critic(state: ResearchState, config: RunnableConfig) -> dict[str, Any]:
             "verdict: retry — claim still unsupported after revision.",
             "critic",
         )
-        return {"critic_attempts": attempts + 1, "verdict": "retry", "failed_claims": still_failed}
+        return {
+            "critic_attempts": attempts + 1,
+            "verdict": "retry",
+            "failed_claims": still_failed,
+            "claims_verified": {"verified": total - len(still_failed), "total": total},
+        }
 
-    e.log("verify", "Critic", "all key claims grounded in their cited sources. ✓", "critic")
+    if still_failed:
+        e.log(
+            "security",
+            "Critic",
+            f"{len(still_failed)} claim(s) still not grounded after retries — "
+            "flagged as unverified.",
+            "critic",
+        )
+    else:
+        e.log("verify", "Critic", "all key claims grounded in their cited sources. ✓", "critic")
     e.node_status("critic", "done")
     e.edge_status("critic->output", "flow")
     return {

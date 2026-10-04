@@ -18,6 +18,8 @@ logs. Per-run token/step ceilings (§8.3) are fed into the orchestrator.
 
 from __future__ import annotations
 
+import logging
+
 import asyncio
 import secrets
 from dataclasses import dataclass, field
@@ -44,6 +46,9 @@ from .store import NullRunStore, RunStore, build_record, serialize_record
 # demo until their adapter lands.
 SUPPORTED_LLM_PROVIDERS = {"anthropic", "openai"}
 
+
+
+log = logging.getLogger("cadenza.runs")
 
 class DecisionNotAllowed(Exception):
     pass
@@ -199,7 +204,17 @@ class RunManager:
         except asyncio.CancelledError:
             raise
         except Exception:
+            # Never swallow silently: the run's cause must be visible in the API logs.
+            log.exception("run %s failed", rec.run_id)
             rec.status = "error"
+            try:
+                em = rec.session.emitter
+                em.error(
+                    "run_failed", "The run hit an unexpected error and stopped.", recoverable=False
+                )
+                em.run_state("error", "Stopped · unexpected error")
+            except Exception:
+                log.exception("could not emit failure event for run %s", rec.run_id)
         finally:
             await self._settle(rec)
             await self._persist(rec)

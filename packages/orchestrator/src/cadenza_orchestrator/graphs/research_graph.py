@@ -85,12 +85,22 @@ def output_node(state: ResearchState, config: RunnableConfig) -> dict[str, Any]:
         sources=state.get("sources"),
         claims_verified=cv,
     )
-    e.log(
-        "verify",
-        "Workflow",
-        "run complete — cited, claim-verified brief released. Permalink saved.",
-        "output",
-    )
+    unverified = cv.get("total", 0) - cv.get("verified", 0)
+    if unverified:
+        e.log(
+            "security",
+            "Workflow",
+            f"run complete — brief released with {unverified} unverified claim(s) flagged. "
+            "Permalink saved.",
+            "output",
+        )
+    else:
+        e.log(
+            "verify",
+            "Workflow",
+            "run complete — cited, claim-verified brief released. Permalink saved.",
+            "output",
+        )
     e.brief_released(brief)
     e.run_completed(cv)
     e.run_state("done", "Complete")

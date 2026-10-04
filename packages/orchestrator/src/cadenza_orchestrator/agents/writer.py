@@ -25,7 +25,8 @@ _SYSTEM = (
     'Respond with ONLY JSON: {"sections": [{"heading": str, "body": str}], '
     '"claims": [{"id": str, "text": str, "source_id": "Source N", "value": str}]}. '
     "Every claim's `value` MUST be a short EXACT quote copied verbatim from that "
-    "source's content, so it can be verified."
+    "source's content, so it can be verified. If `human_note` is present, it is the "
+    "reviewer's instruction on scope and focus: follow it."
 )
 
 _FIX_SYSTEM = (
@@ -51,6 +52,9 @@ def _sources_prompt(state: ResearchState) -> str:
         {
             "insights": state.get("insights", ""),
             "direction": state.get("direction", []),
+            "human_note": (state.get("hitl_note") or "").strip()
+            if state.get("hitl_decision") == "adjust"
+            else "",
             "sources": [
                 {"id": s["id"], "label": s["label"], "content": s["content"]} for s in sources
             ],
@@ -109,7 +113,7 @@ def writer(state: ResearchState, config: RunnableConfig) -> dict[str, Any]:
                 system=_SYSTEM,
                 prompt=_sources_prompt(state),
                 model=ctx.api_model_for("writer"),
-                max_tokens=2000,
+                max_tokens=3000,
             )
             ctx.charge(res)
             draft = _parse_draft(res.text, 1) or {"version": 1, "claims": _initial_claims()}
@@ -140,11 +144,14 @@ def writer(state: ResearchState, config: RunnableConfig) -> dict[str, Any]:
                 }
             ),
             model=ctx.api_model_for("writer"),
-            max_tokens=1500,
+            max_tokens=3000,
         )
         ctx.charge(res)
         fixed = _parse_draft(res.text, 2)
-        draft = fixed or {"version": 2, "claims": _corrected_claims(prev, failed)}
+        # If the revision can't be parsed, keep the previous draft as-is: the Critic
+        # re-checks it and the unverified claims stay flagged. (The demo corpus
+        # corrections only exist for the mock path's c1–c3 ids.)
+        draft = fixed or {**state.get("draft", {}), "version": 2, "claims": prev}
     else:
         ctx.charge(
             ctx.llm.complete(system="Writer", prompt="revise flagged claims", model=ctx.model_id)

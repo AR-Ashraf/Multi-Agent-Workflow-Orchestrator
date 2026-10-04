@@ -104,7 +104,9 @@ def create_app(manager: RunManager, *, cors_origins: list[str] | None = None) ->
 
         async def generator() -> AsyncIterator[dict[str, str]]:
             async for event in manager.bus.subscribe(run_id, after_seq):
-                yield {"id": str(event["seq"]), "event": event["type"], "data": json.dumps(event)}
+                # No `event:` name: the browser listens with EventSource.onmessage, which only
+                # receives unnamed ("message") events. The type is inside the JSON payload.
+                yield {"id": str(event["seq"]), "data": json.dumps(event)}
 
         return EventSourceResponse(generator())
 

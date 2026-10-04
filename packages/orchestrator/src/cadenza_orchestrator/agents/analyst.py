@@ -18,6 +18,7 @@ from typing import Any
 
 from langchain_core.runnables import RunnableConfig
 
+from ..context import RunAborted
 from ..llm import LLMError, parse_json
 from ..state import ResearchState
 from ._base import ctx_from, is_real
@@ -58,6 +59,15 @@ def _synthesize(ctx, findings: list[dict[str, Any]]):
         return "mid-market is underserved", DIRECTION, [], res
 
     sources = _build_sources(findings)
+    if not sources:
+        # Never fall back to canned content on a real run: with nothing readable to
+        # cite, the honest outcome is to stop and say so.
+        raise RunAborted(
+            "no_sources",
+            "No readable web pages were found for this question, so there is nothing to cite. "
+            "Try rephrasing it.",
+            "Stopped · no readable sources",
+        )
     prompt = json.dumps(
         [{"subtask": s["label"], "source": s["id"], "content": s["content"]} for s in sources]
         or findings
@@ -91,16 +101,15 @@ def analyst(state: ResearchState, config: RunnableConfig) -> dict[str, Any]:
     insights, direction, sources, res = _synthesize(ctx, state.get("findings", []))
     ctx.charge(res)
 
-    e.agent_rationale(
-        "analyst",
-        "Clustered findings into market size, 3 competitors, and a pricing band; flagged the underserved mid-market as the angle.",
-    )
-    e.log(
-        "rationale",
-        "Analyst",
-        "clustered findings into market size, 3 competitors, pricing band; flagged the underserved mid-market.",
-        "analyst",
-    )
+    if is_real(ctx):
+        summary = f"From {len(sources)} screened source(s): {insights}"[:300]
+    else:
+        summary = (
+            "Clustered findings into market size, 3 competitors, and a pricing band; "
+            "flagged the underserved mid-market as the angle."
+        )
+    e.agent_rationale("analyst", summary)
+    e.log("rationale", "Analyst", summary, "analyst")
     e.node_status("analyst", "done")
     e.edge_status("analyst->hitl", "flow")
     e.edge_status("analyst->hitl", "done")

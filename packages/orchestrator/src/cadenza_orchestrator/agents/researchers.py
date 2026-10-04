@@ -20,6 +20,7 @@ from langchain_core.runnables import RunnableConfig
 
 from ..guard import screen_content
 from ..state import ResearchState
+from ..tools.types import ToolError
 from ._base import ctx_from, is_real, truncate
 
 # node_id -> (subtask label, human-readable search query)  [mock-path defaults]
@@ -62,7 +63,14 @@ def make_researcher(node_id: str) -> Callable[[ResearchState, RunnableConfig], d
         blocked_any = False
 
         for result in results:
-            page = ctx.fetch.fetch(result.url)  # UNTRUSTED until screened
+            try:
+                page = ctx.fetch.fetch(result.url)  # UNTRUSTED until screened
+            except ToolError as ex:
+                # One unreadable page (paywall, PDF, timeout) must not end the run.
+                e.log(
+                    "info", who, f"could not read {result.url} ({ex}) — trying the next.", node_id
+                )
+                continue
             verdict = screen_content(page.content, source_url=page.url)
 
             if verdict.status == "blocked":
@@ -110,6 +118,12 @@ def make_researcher(node_id: str) -> Callable[[ResearchState, RunnableConfig], d
             e.log(
                 "info", who, "re-read clean pages from other sources → findings recovered.", node_id
             )
+
+        if real:
+            if safe_content:
+                e.log("info", who, f"read {chosen_url} ({len(safe_content):,} chars).", node_id)
+            else:
+                e.log("info", who, "found no readable page for this sub-question.", node_id)
 
         e.node_status(node_id, "done")
         e.edge_status(f"{node_id}->analyst", "flow")
